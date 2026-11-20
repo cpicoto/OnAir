@@ -46,3 +46,9 @@ The logic without a window (gain split, picture colours, lock stages) is tested 
 
 GPL-3.0-or-later, as OnAir. The About box carries the attribution line required by
 [ADDITIONAL-TERMS.md](../ADDITIONAL-TERMS.md): "Based on OnAir by Kristijonas Adomaitis - https://on-air.dev".
+
+## Continuous builds
+
+`.github/workflows/ww7ats.yml` builds `onair-ww7ats` on macOS (arm64) and Windows (x64, MSYS2 UCRT64), runs `test_ww7ats_logic`,
+and uploads a zip per system (program plus the libraries it needs) as a workflow artifact. Run it by hand from
+Actions > WW7ATS receiver > Run workflow, or push a change to the app.

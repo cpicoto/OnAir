@@ -1,0 +1,103 @@
+# Builds onair-ww7ats, the simple WW7ATS DVB-T receiver (docs/WW7ATS.md), on macOS (arm64) and Windows (x64, MSYS2 UCRT64),
+# runs its logic test and uploads a zip per system with the program and the libraries it needs.
+name: WW7ATS receiver
+
+on:
+  push:
+    branches: ['cpicoto-ww7ats-receiver-ui', 'main']
+    paths:
+      - 'tools/ww7ats/**'
+      - 'tests/app/test_ww7ats_logic.cpp'
+      - 'core/**'
+      - 'CMakeLists.txt'
+      - 'cmake/**'
+      - '.github/workflows/ww7ats.yml'
+  pull_request:
+    paths:
+      - 'tools/ww7ats/**'
+      - 'tests/app/test_ww7ats_logic.cpp'
+      - '.github/workflows/ww7ats.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ww7ats-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_MAXSIZE: 2G
+
+jobs:
+  macos:
+    name: macOS arm64
+    runs-on: macos-15
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Install dependencies
+        run: tools/release/retry.sh brew install cmake ninja pkg-config ccache hackrf soapysdr libusb ffmpeg glfw dylibbundler
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ww7ats-ccache-macos-${{ github.sha }}
+          restore-keys: ww7ats-ccache-macos-
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=OFF -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      - name: Build
+        run: cmake --build build -j 4 --target onair-ww7ats test_ww7ats_logic
+      - name: Test
+        run: ./build/test_ww7ats_logic
+      - name: Package (Homebrew libraries bundled next to the program)
+        run: |
+          mkdir -p dist/onair-ww7ats
+          cp build/onair-ww7ats dist/onair-ww7ats/
+          cp build/*.dylib dist/onair-ww7ats/ 2>/dev/null || true
+          dylibbundler -of -b -x dist/onair-ww7ats/onair-ww7ats -d dist/onair-ww7ats/libs -p @executable_path/libs/
+          codesign --force -s - dist/onair-ww7ats/libs/*.dylib dist/onair-ww7ats/onair-ww7ats
+          cp docs/WW7ATS.md LICENSE ADDITIONAL-TERMS.md dist/onair-ww7ats/
+          otool -L dist/onair-ww7ats/onair-ww7ats
+          cd dist && ditto -c -k --keepParent onair-ww7ats onair-ww7ats-macos-arm64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onair-ww7ats-macos-arm64
+          path: dist/onair-ww7ats-macos-arm64.zip
+
+  windows:
+    name: Windows x64
+    runs-on: windows-2022
+    timeout-minutes: 240
+    defaults: { run: { shell: 'msys2 {0}' } }
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64   # the MINGW64 environment has no hackrf and soapysdr packages
+          update: true
+          install: >-
+            git zip mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-pkgconf mingw-w64-ucrt-x86_64-ccache mingw-w64-ucrt-x86_64-rust
+            mingw-w64-ucrt-x86_64-ffmpeg mingw-w64-ucrt-x86_64-glfw mingw-w64-ucrt-x86_64-hackrf mingw-w64-ucrt-x86_64-soapysdr mingw-w64-ucrt-x86_64-libiconv mingw-w64-ucrt-x86_64-python
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ww7ats-ccache-windows-${{ github.sha }}
+          restore-keys: ww7ats-ccache-windows-
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DDECT2_BUILD_APP=ON -DDECT2_BUILD_TESTS=OFF -DDECT2_COPY_RUNTIME_DLLS=ON -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      - name: Build
+        run: cmake --build build -j 4 --target onair-ww7ats test_ww7ats_logic
+      - name: Test
+        run: ./build/test_ww7ats_logic.exe
+      - name: Package (DLLs copied next to the program by DECT2_COPY_RUNTIME_DLLS)
+        run: |
+          mkdir -p dist/onair-ww7ats
+          cp build/onair-ww7ats.exe dist/onair-ww7ats/
+          cp build/*.dll dist/onair-ww7ats/
+          cp docs/WW7ATS.md LICENSE ADDITIONAL-TERMS.md dist/onair-ww7ats/
+          ls dist/onair-ww7ats
+          cd dist && zip -qr onair-ww7ats-windows-x64.zip onair-ww7ats
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onair-ww7ats-windows-x64
+          path: dist/onair-ww7ats-windows-x64.zip

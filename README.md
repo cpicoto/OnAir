@@ -130,6 +130,7 @@ The full list: [docs/FEATURES.md](docs/FEATURES.md) and [docs/TOOLS-AND-NOTES.md
 - [Transmit](docs/TRANSMIT.md) and the [remote-control API](docs/REMOTE-API.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md) and [good to know](docs/GOOD-TO-KNOW.md)
 - [Build from source](docs/BUILD.md) and [ARCHITECTURE.md](ARCHITECTURE.md)
+- [WW7ATS receiver](docs/WW7ATS.md): a simple one-screen DVB-T receiver for the WW7ATS ATV repeater (1255 MHz)
 - [Codecs](docs/CODECS.md) (voice and audio codecs you install yourself) and [optional libraries](docs/OPTIONAL-LIBRARIES.md)
 - [Plugins](docs/plugins.md) and the [plugin SDK](docs/PLUGIN-SDK.md)
 - [Updates and Discord status](docs/UPDATES.md)

@@ -1078,6 +1078,35 @@ if(DECT2_BUILD_APP)
   endif()
   target_sources(dect2 PRIVATE app/panels/wide_all_ui.cpp)   # Everything in view: wide multi-signal decode window
   target_sources(dect2 PRIVATE app/panels/rffp_ui.cpp)   # RF fingerprint window (docs/RF-FINGERPRINT.md)
+
+  # onair-ww7ats: a one-screen DVB-T receiver for the WW7ATS ATV repeater (docs/WW7ATS.md). Its own ImGui build on OpenGL 3,
+  # whatever DECT2_UI_BACKEND is, so the same code runs on macOS and Windows.
+  option(ONAIR_BUILD_WW7ATS "Build onair-ww7ats, the simple WW7ATS DVB-T receiver" ON)
+  if(ONAIR_BUILD_WW7ATS)
+    add_library(imgui_gl3 STATIC
+      third_party/imgui/imgui.cpp third_party/imgui/imgui_draw.cpp third_party/imgui/imgui_tables.cpp third_party/imgui/imgui_widgets.cpp
+      third_party/imgui/backends/imgui_impl_glfw.cpp third_party/imgui/backends/imgui_impl_opengl3.cpp)
+    target_include_directories(imgui_gl3 PUBLIC third_party/imgui third_party/imgui/backends)
+    target_link_libraries(imgui_gl3 PUBLIC PkgConfig::GLFW)
+    if(APPLE)
+      target_link_libraries(imgui_gl3 PUBLIC "-framework Cocoa" "-framework IOKit" "-framework CoreVideo" "-framework OpenGL")
+      target_compile_definitions(imgui_gl3 PUBLIC GL_SILENCE_DEPRECATION)
+    elseif(WIN32)
+      target_link_libraries(imgui_gl3 PUBLIC opengl32 gdi32 imm32)
+      target_compile_definitions(imgui_gl3 PUBLIC _USE_MATH_DEFINES NOMINMAX)
+    else()
+      find_package(OpenGL REQUIRED)
+      target_link_libraries(imgui_gl3 PUBLIC OpenGL::GL ${CMAKE_DL_LIBS})
+    endif()
+    add_executable(onair-ww7ats tools/ww7ats/ww7ats.cpp)
+    target_link_libraries(onair-ww7ats PRIVATE dect2core imgui_gl3)
+    if(MINGW)
+      set_target_properties(onair-ww7ats PROPERTIES WIN32_EXECUTABLE ON)   # no console window; MinGW still enters through main()
+    endif()
+    add_executable(test_ww7ats_logic tests/app/test_ww7ats_logic.cpp)   # gain split, NV12 colours, lock text (tools/ww7ats/ww7ats_logic.h)
+    target_include_directories(test_ww7ats_logic PRIVATE tools/ww7ats)
+    add_test(NAME ww7ats_logic COMMAND test_ww7ats_logic)
+  endif()
   target_link_libraries(dect2 PRIVATE dect2core imgui onair_web)
   target_include_directories(dect2 PRIVATE server)
   target_sources(dect2 PRIVATE server/server_config.cpp)
@@ -3548,7 +3577,7 @@ endif()
 
 if(DECT2_COPY_RUNTIME_DLLS AND MINGW)
   get_filename_component(DECT2_RUNTIME_DLL_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)   # the MSYS2 (or mingw-w64) bin folder holds every DLL the programs link to
-  foreach(t dect2 dect2cli dect2scan onair-server)
+  foreach(t dect2 dect2cli dect2scan onair-server onair-ww7ats)
     if(TARGET ${t})
       add_custom_command(TARGET ${t} POST_BUILD
         COMMAND ${CMAKE_COMMAND} "-DEXE=$<TARGET_FILE:${t}>" "-DSEARCH_DIR=${DECT2_RUNTIME_DLL_DIR}" "-DOBJDUMP=${CMAKE_OBJDUMP}"

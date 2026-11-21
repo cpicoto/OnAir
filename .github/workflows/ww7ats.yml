@@ -53,7 +53,7 @@ jobs:
           mkdir -p dist/onair-ww7ats
           cp build/onair-ww7ats dist/onair-ww7ats/
           cp build/*.dylib dist/onair-ww7ats/ 2>/dev/null || true
-          dylibbundler -of -b -x dist/onair-ww7ats/onair-ww7ats -d dist/onair-ww7ats/libs -p @executable_path/libs/
+          dylibbundler -cd -of -b -x dist/onair-ww7ats/onair-ww7ats -d dist/onair-ww7ats/libs -p @executable_path/libs/
           codesign --force -s - dist/onair-ww7ats/libs/*.dylib dist/onair-ww7ats/onair-ww7ats
           cp docs/WW7ATS.md LICENSE ADDITIONAL-TERMS.md dist/onair-ww7ats/
           otool -L dist/onair-ww7ats/onair-ww7ats

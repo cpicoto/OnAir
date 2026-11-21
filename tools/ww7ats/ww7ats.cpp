@@ -298,6 +298,28 @@ void frame(App& a) {
             ImGui::Text("   RS fixed %llu, failed %llu", (unsigned long long)t.rsCorrected, (unsigned long long)t.rsFailed);
         }
     }
+    if (playing) {
+        const PlayerStats ps = a.engine.player().stats();
+        ImGui::Separator();
+        if (ps.hasAudio) {
+            ImGui::Text("Audio: %s, %d ch", ps.audioCodec.c_str(), ps.audioChannels);
+            ImGui::SameLine();
+            if (ps.audioOutputActive) ImGui::TextDisabled("output active  %.0f ms buffered", ps.audioBufferMs);
+            else ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", ps.audioOutputNote.empty() ? "sound output unavailable" : ps.audioOutputNote.c_str());
+        } else {
+            const auto tracks = a.engine.player().audioTracks();
+            if (tracks.empty()) {
+                ImGui::TextDisabled("Audio: waiting for an AAC/audio track");
+            } else {
+                ImGui::TextColored(ImVec4(1, 0.75f, 0.3f, 1), "Audio track detected, but its decoder did not start:");
+                for (const AudioTrackInfo& track : tracks) {
+                    ImGui::SameLine();
+                    ImGui::Text("%s (%d ch)", track.codec.c_str(), track.channels);
+                }
+            }
+            if (!ps.audioNote.empty()) ImGui::TextWrapped("%s", ps.audioNote.c_str());
+        }
+    }
     if (!a.message.empty()) ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", a.message.c_str());
     else if (!a.radioErr.empty() && a.radios.empty()) ImGui::TextColored(ImVec4(1, 0.4f, 0.4f, 1), "%s", a.radioErr.c_str());
     ImGui::Separator();

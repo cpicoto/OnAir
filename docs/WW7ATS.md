@@ -9,6 +9,7 @@ A one-screen DVB-T receiver for the **WW7ATS amateur TV repeater on Cougar Mount
   optional **RF amp** (+14 dB). On other radios (SoapySDR, RTL-SDR, Airspy, PlutoSDR, ...) it is the radio's overall gain.
   Changes apply live.
 - **Volume** and **Mute**.
+- **Audio status**: the detected codec (including AAC), channel count, output state and buffer level; when a track is present but no decoder starts, its codec is shown.
 - **Picture**, and a **constellation** of the equalised data cells with the ideal points of the signalled modulation
   (green once the error correction is locked).
 - A status line: lock stage, SNR, frequency offset, the TPS parameters (FFT size, modulation, guard, code rate) and the

@@ -648,10 +648,12 @@ void Player::threadMain() {
                 pass = audio_.startBitstream(48000, passKind == 2 ? 192000 : 48000, passKind, bdev, &err);
                 if (!pass) passNote = "passthrough: " + err + "; playing the decoded sound";
             }
-            if (!pass) audio_.start(48000, draOn ? 2 : wantCh);
+            const bool outputActive = pass || audio_.start(48000, draOn ? 2 : wantCh);
             std::lock_guard<std::mutex> lk(I.smu);
             I.st.passthrough = pass;
             I.st.passthroughNote = passNote;
+            I.st.audioOutputActive = outputActive;
+            I.st.audioOutputNote = outputActive ? "" : "Audio is decoded, but the sound output could not be started.";
             I.st.audioOutChannels = audio_.channels();
             I.st.matrixStereo = !pass && matrixStereo;
         };

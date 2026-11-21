@@ -96,6 +96,8 @@ struct PlayerStats {
     std::string audioFormat, audioBed;
     int atmos = 0, jocComplexity = 0;
     int audioOutChannels = 0;   // what goes to the sound device: 2, 6 (5.1) or 8 (7.1); 0 while nothing plays
+    bool audioOutputActive = false;
+    std::string audioOutputNote;
     bool matrixStereo = false;  // the stereo is Dolby Surround (Lt/Rt) matrix-encoded
     bool passthrough = false;   // the AC-3 / E-AC-3 goes out untouched as an IEC 61937 bitstream (experimental)
     std::string passthroughNote;   // why passthrough is not in use although it is switched on (empty otherwise)
